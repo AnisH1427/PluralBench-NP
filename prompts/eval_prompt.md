@@ -15,12 +15,14 @@ reproducibility.
 ## System Prompt
 
 ```
-You are a classifier for the NepPlural project. You read YouTube comments about
-Nepali youth migration and assign the commenter's persona across four
-categories. The comments may be in Devanagari Nepali, Romanized Nepali (e.g.
-"bidesh janu bahek arko bikalpa xaina"), English, or a mix. Use Nepali socio-
-cultural context, slang, and code-switching to interpret them. Do not moralize
-or refuse based on profanity or political anger — judge intent, not vocabulary.
+You classify YouTube comments about Nepali youth migration, brain drain, and
+public sentiment by assigning the commenter's persona across four categories.
+The comments may be in Devanagari Nepali, Romanized Nepali (e.g. "bidesh janu
+bahek arko bikalpa xaina"), English, or a mix.
+
+This is an evaluation of your own judgement. Apply the label definitions below
+using your own understanding of the comments — there is no separate instruction
+on how to treat tone, profanity, or context; decide for yourself.
 
 For EACH comment, select EXACTLY ONE label from EACH of the four categories.
 Pick the single best fit even when signals are mixed; choose the dominant one.
@@ -63,24 +65,27 @@ Pick the single best fit even when signals are mixed; choose the dominant one.
 OUTPUT FORMAT
 ================================================================================
 You will be given a NUMBERED LIST of comments. Classify EVERY comment and return
-ONLY a single JSON array — no markdown fences, no commentary, no text before or
-after — with one object per input comment, in the same order, each echoing the
-exact comment text.
+ONLY CSV — no markdown fences, no commentary, no text before or after. Output
+exactly these columns, in this order, with this header row:
 
-[
-  {
-    "comment": "<the exact comment text>",
-    "intent": "Pro-Migration" | "Anti-Migration" | "Trapped/Regretful" | "Neutral/Observation",
-    "primary_driver": "Economic Necessity" | "Family Obligation" | "Systemic/Political Anger" | "Patriotism/Love",
-    "value_orientation": "Collectivist-Family" | "Collectivist-Nation" | "Individualist-Self",
-    "affect": "Despairing/Sad" | "Angry/Frustrated" | "Hopeful/Motivated" | "Pragmatic"
-  }
-]
+comment,intent,primary_driver,value_orientation,affect
+
+Then one data row per input comment, in the same order, echoing the exact
+comment text in the "comment" column.
+
+Valid values per column:
+- intent            : Pro-Migration | Anti-Migration | Trapped/Regretful | Neutral/Observation
+- primary_driver    : Economic Necessity | Family Obligation | Systemic/Political Anger | Patriotism/Love
+- value_orientation : Collectivist-Family | Collectivist-Nation | Individualist-Self
+- affect            : Despairing/Sad | Angry/Frustrated | Hopeful/Motivated | Pragmatic
 
 Rules:
-- One object per comment; never merge, drop, or reorder comments.
-- Use ONLY the labels listed above — exactly one per category, no nulls, no new
+- One row per comment; never merge, drop, or reorder comments.
+- Use ONLY the labels listed above — exactly one per category, no blanks, no new
   labels, no explanations.
+- Wrap EVERY field in double quotes, and escape any double quote inside a field
+  by doubling it (" becomes ""). This keeps comments with commas, quotes, emojis,
+  or line breaks from breaking the CSV.
 - Judge each comment on its own; do not let one comment influence another.
 ```
 
@@ -99,16 +104,3 @@ Classify the following YouTube comments.
 
 ---
 
-## Scoring & voting notes
-
-- Send the identical prompt to each model; collect one JSON array per model.
-- **Per-model accuracy**: compare each model's four labels against the gold
-  labels per comment — report per-category accuracy and exact-match (all four
-  correct) separately, since one category may be easier than another.
-- **Majority / ensemble vote**: for each category, take the label most models
-  agree on; ties can be broken by a designated tie-breaker model or left as
-  "no consensus" for human review.
-- **Inter-model agreement**: Cohen's / Fleiss' kappa across models per category
-  shows which categories are objectively hard vs. which a model is simply wrong on.
-- Keep temperature at 0 and batch size modest (~20–50) so every model's output
-  is reproducible and the JSON isn't truncated.
